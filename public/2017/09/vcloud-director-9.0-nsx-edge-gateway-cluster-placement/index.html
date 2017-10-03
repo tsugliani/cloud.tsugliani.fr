@@ -1,0 +1,945 @@
+
+
+  
+    
+  
+
+
+  
+
+
+
+
+  
+
+
+  
+
+<!DOCTYPE html>
+<html lang="">
+  <head>
+    
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="generator" content="Hugo 0.29 with theme Tranquilpeak 0.4.1-BETA">
+    <title>vCloud Director 9.0: NSX Edge Gateway cluster placement</title>
+    <meta name="author" content="Timo Sugliani">
+    <meta name="keywords" content=", cloud, VMware">
+
+    <link rel="icon" href="https://cloud.tsugliani.fr/favicon.png">
+    
+
+    
+    <meta name="description" content="This post will highlight a long awaited feature, which is now available in vCloud Director 9.0.
+We will depict how to enforce the placement of the NSX Edge Gateways in a resource pool, which ultimately leverages a specific vSphere Cluster.
+It avoids having to spread all External VLANs across every Compute Cluster and enforce all the traffic connecting to the outside world would go through a specific location. (Cluster/TOR/Racks)">
+    <meta property="og:description" content="This post will highlight a long awaited feature, which is now available in vCloud Director 9.0.
+We will depict how to enforce the placement of the NSX Edge Gateways in a resource pool, which ultimately leverages a specific vSphere Cluster.
+It avoids having to spread all External VLANs across every Compute Cluster and enforce all the traffic connecting to the outside world would go through a specific location. (Cluster/TOR/Racks)">
+    <meta property="og:type" content="blog">
+    <meta property="og:title" content="vCloud Director 9.0: NSX Edge Gateway cluster placement">
+    <meta property="og:url" content="/2017/09/vcloud-director-9.0-nsx-edge-gateway-cluster-placement/">
+    <meta property="og:site_name" content="VMware and DevOps Cloud Stuff">
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="VMware and DevOps Cloud Stuff">
+    <meta name="twitter:description" content="This post will highlight a long awaited feature, which is now available in vCloud Director 9.0.
+We will depict how to enforce the placement of the NSX Edge Gateways in a resource pool, which ultimately leverages a specific vSphere Cluster.
+It avoids having to spread all External VLANs across every Compute Cluster and enforce all the traffic connecting to the outside world would go through a specific location. (Cluster/TOR/Racks)">
+    
+      <meta name="twitter:creator" content="@tsugliani">
+    
+    
+
+    
+    
+
+    
+      <meta property="og:image" content="//www.gravatar.com/avatar/eb80e6c9521260128c16edb7c3e570ee?s=640">
+    
+
+    
+      <meta property="og:image" content="https://cloud.tsugliani.fr/img/vcloud.png">
+    
+    
+    
+
+    
+
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" integrity="sha256-eZrrJcwDc/3uDhsdt61sL2oOBY362qM3lon1gyExkL0=" crossorigin="anonymous" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/fancybox/2.1.4/jquery.fancybox.min.css" integrity="sha256-vuXZ9LGmmwtjqFX1F+EKin1ThZMub58gKULUyf0qECk=" crossorigin="anonymous" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/fancybox/2.1.4/helpers/jquery.fancybox-thumbs.min.css" integrity="sha256-SEa4XYAHihTcEP1f5gARTB2K26Uk8PsndQYHQC1f4jU=" crossorigin="anonymous" />
+    
+    
+    <link rel="stylesheet" href="https://cloud.tsugliani.fr/css/style-fpbzgxsy0kgmdvyrj5ykkg6ratccrk3gocmaqn4xpcjywmv5dteilzucro4f.min.css" />
+    
+    
+
+    
+      
+<script>
+(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+ga('create', 'UA-2520861-5', 'auto');
+ga('send', 'pageview');
+</script>
+
+    
+    
+  </head>
+
+  <body>
+    <div id="blog">
+      <header id="header" data-behavior="5">
+  <i id="btn-open-sidebar" class="fa fa-lg fa-bars"></i>
+  <div class="header-title">
+    <a class="header-title-link" href="https://cloud.tsugliani.fr/">VMware and DevOps Cloud Stuff</a>
+  </div>
+  
+    
+      <a class="header-right-picture "
+         href="https://cloud.tsugliani.fr/#about">
+    
+    
+    
+      
+        <img class="header-picture" src="//www.gravatar.com/avatar/eb80e6c9521260128c16edb7c3e570ee?s=90" alt="Author&#39;s picture" />
+      
+    
+    </a>
+  
+</header>
+
+      <nav id="sidebar" data-behavior="5">
+  <div class="sidebar-container">
+    
+      <div class="sidebar-profile">
+        <a href="https://cloud.tsugliani.fr/#about">
+          <img class="sidebar-profile-picture" src="//www.gravatar.com/avatar/eb80e6c9521260128c16edb7c3e570ee?s=110" alt="Author&#39;s picture" />
+        </a>
+        <h4 class="sidebar-profile-name">Timo Sugliani</h4>
+        
+          <h5 class="sidebar-profile-bio">Enthusiast French Cloud Dude</h5>
+        
+      </div>
+    
+    <ul class="sidebar-buttons">
+      
+  <li class="sidebar-button">
+    
+      <a class="sidebar-button-link " href="https://cloud.tsugliani.fr/">
+    
+      <i class="sidebar-button-icon fa fa-lg fa-home"></i>
+      
+      <span class="sidebar-button-desc">Home</span>
+    </a>
+  </li>
+
+  <li class="sidebar-button">
+    
+      <a class="sidebar-button-link " href="https://cloud.tsugliani.fr/categories">
+    
+      <i class="sidebar-button-icon fa fa-lg fa-bookmark"></i>
+      
+      <span class="sidebar-button-desc">Categories</span>
+    </a>
+  </li>
+
+  <li class="sidebar-button">
+    
+      <a class="sidebar-button-link " href="https://cloud.tsugliani.fr/tags">
+    
+      <i class="sidebar-button-icon fa fa-lg fa-tags"></i>
+      
+      <span class="sidebar-button-desc">Tags</span>
+    </a>
+  </li>
+
+  <li class="sidebar-button">
+    
+      <a class="sidebar-button-link " href="https://cloud.tsugliani.fr/archives">
+    
+      <i class="sidebar-button-icon fa fa-lg fa-archive"></i>
+      
+      <span class="sidebar-button-desc">Archives</span>
+    </a>
+  </li>
+
+  <li class="sidebar-button">
+    
+      <a class="sidebar-button-link " href="https://cloud.tsugliani.fr/#about">
+    
+      <i class="sidebar-button-icon fa fa-lg fa-question"></i>
+      
+      <span class="sidebar-button-desc">About</span>
+    </a>
+  </li>
+
+
+    </ul>
+    <ul class="sidebar-buttons">
+      
+  <li class="sidebar-button">
+    
+      <a class="sidebar-button-link " href="https://github.com/tsugliani" target="_blank" rel="noopener">
+    
+      <i class="sidebar-button-icon fa fa-lg fa-github"></i>
+      
+      <span class="sidebar-button-desc">GitHub</span>
+    </a>
+  </li>
+
+
+    </ul>
+    <ul class="sidebar-buttons">
+      
+  <li class="sidebar-button">
+    
+      <a class="sidebar-button-link " href="https://cloud.tsugliani.fr/index.xml">
+    
+      <i class="sidebar-button-icon fa fa-lg fa-rss"></i>
+      
+      <span class="sidebar-button-desc">RSS</span>
+    </a>
+  </li>
+
+
+    </ul>
+  </div>
+</nav>
+
+      
+
+      <div id="main" data-behavior="5"
+        class="
+               hasCoverMetaIn
+               ">
+        <article class="post" itemscope itemType="http://schema.org/BlogPosting">
+          
+          
+            <div class="post-header main-content-wrap text-left">
+  
+    <h1 class="post-title" itemprop="headline">
+      vCloud Director 9.0: NSX Edge Gateway cluster placement
+    </h1>
+  
+  
+  <div class="postShorten-meta post-meta">
+    
+      <time itemprop="datePublished" datetime="2017-09-24T00:00:00Z">
+        
+  
+  
+  
+  
+    24 September 2017
+  
+
+      </time>
+    
+    
+  
+  
+    <span>in</span>
+    
+      <a class="category-link" href="https://cloud.tsugliani.fr/categories/vcloud-director">vCloud Director</a>, 
+    
+      <a class="category-link" href="https://cloud.tsugliani.fr/categories/nsx">NSX</a>
+    
+  
+
+
+  </div>
+
+</div>
+          
+          <div class="post-content markdown" itemprop="articleBody">
+            <div class="main-content-wrap">
+              
+
+<p>This post will highlight a long awaited feature, which is now available in vCloud Director 9.0.</p>
+
+<p>We will depict how to <strong>enforce</strong> the placement of the <strong>NSX Edge Gateways</strong> in a resource pool, which ultimately leverages a <strong>specific vSphere Cluster</strong>.</p>
+
+<p>It avoids having to spread all <strong>External</strong> VLANs across every <strong>Compute</strong> Cluster and enforce all the traffic connecting to the outside world would go through a specific location. (<strong>Cluster/TOR/Racks</strong>)</p>
+
+<p>In the previous versions of vCloud Director, one thing we couldn&rsquo;t accomplish easily was to ensure all N/S traffic from the NSX VXLAN overlay to the physical underlay/networks, which is usually VLAN Based <strong>AND</strong> at the same time keep the compute workloads VMs seperated as depicted in the <a href="http://download3.vmware.com/vcat/vmw-vcloud-architecture-toolkit-spv1-webworks/index.html#page/Cloud%2520Automation%2520and%2520Orchestration%2FArchitecting%2520a%2520vCloud%2520Director%2520Solution%2FArchitecting%2520a%2520vCloud%2520Director%2520Solution.1.036.html%23">vCAT-SP - Architecting a vCloud Director Solution / NSX Edge Cluster Design options</a></p>
+
+<p>This should mitigate all the previous drawbacks &amp; overhead when using this setup in a leaf &amp; spine scenario.
+The below diagram shows the updated behavior when leveraging the feature.</p>
+
+<blockquote>
+</blockquote>
+
+
+
+  
+  
+  
+  
+    
+      
+    
+  
+    
+  
+
+
+  
+  
+  
+  
+    
+  
+
+<div class="figure " >
+  
+    <a class="fancybox" href="https://cloud.tsugliani.fr/img/vcd-edge-cluster-problem-statement.png" title="Updated NSX Edge Cluster behavior with spine &amp; leaf topology" data-fancybox-group="">
+  
+    <img class="fig-img" src="https://cloud.tsugliani.fr/img/vcd-edge-cluster-problem-statement.png"  alt="Updated NSX Edge Cluster behavior with spine &amp; leaf topology">
+  
+    </a>
+  
+  
+    <span class="caption">Updated NSX Edge Cluster behavior with spine &amp; leaf topology</span>
+  
+</div>
+
+  <div style="clear:both;"></div>
+
+
+<h1 id="background">Background</h1>
+
+<p>You might have encountered 2 main following architectures with NSX:</p>
+
+<ul>
+<li><strong>Management</strong>, <strong>Edge</strong> &amp; <strong>Compute</strong> Clusters (requires at least <strong>3</strong> clusters)</li>
+<li><strong>Collapsed Management/Edge</strong> &amp; <strong>Compute</strong> Clusters (requires at least <strong>2</strong> clusters)</li>
+</ul>
+
+<p>I will not go into details comparing the various pro/cons of both, but just to set a bit of background on why this new feature now exists. They each have benefits and disadvantages depicted in the <strong>NSX Design considerations</strong> section of the <a href="https://www.vmware.com/content/dam/digitalmarketing/vmware/en/pdf/products/nsx/vmw-nsx-network-virtualization-design-guide.pdf">NSX Design Guide</a></p>
+
+<p>Then what is expected with such a design is:</p>
+
+<ul>
+<li>N/S traffic goes through the Edge Cluster (VXLAN to VLAN traffic)</li>
+<li>E/W traffic goes through the DLR in the compute(s) clusters and also Edge Cluster (<strong><em>Note:</em></strong> Usually only VXLAN traffic)</li>
+</ul>
+
+<p>So the good news, is that with vCloud Director 9.0 we can now achieve the same recommended design, let&rsquo;s see how this can be implemented.</p>
+
+<h1 id="setup">Setup</h1>
+
+<p>Taking a step back and mapping what we just explained to vCloud Director leveraging NSX, this is what it would look like.</p>
+
+<blockquote>
+</blockquote>
+
+
+
+  
+  
+  
+  
+    
+      
+    
+  
+    
+  
+
+
+  
+  
+  
+  
+    
+  
+
+<div class="figure " >
+  
+    <a class="fancybox" href="https://cloud.tsugliani.fr/img/nsx-edge-cluster-placement.png" title="NSX Edge Gateway Cluster Placement High Level Topology" data-fancybox-group="">
+  
+    <img class="fig-img" src="https://cloud.tsugliani.fr/img/nsx-edge-cluster-placement.png"  alt="NSX Edge Gateway Cluster Placement High Level Topology">
+  
+    </a>
+  
+  
+    <span class="caption">NSX Edge Gateway Cluster Placement High Level Topology</span>
+  
+</div>
+
+  <div style="clear:both;"></div>
+
+
+<p>The setup still requires some preparation but can be pretty flexible as shown in the above diagram. It relies on vCloud Metadata <strong><code>key/values</code></strong> that will trigger and enable a specific placement algorithm engine once configured.</p>
+
+<p><strong><em>Note:</em></strong> This will deny any normal compute workloads to run in that specific resource pool</p>
+
+<p>Requirements:</p>
+
+<ol>
+<li>Create a resource pool identifying the Provider VDC in the Edge Cluster on vSphere</li>
+<li>Each Resource Pool created previously will be added in the Provider vDC
+
+<ul>
+<li>In my example you can see the following:
+
+<ul>
+<li>There is 2 Provider VDCs, <strong>PvDC A</strong> and <strong>PvDC B</strong>, and we created 2 resource pools to match those in the Edge Cluster <strong>RP PvDC A</strong> and
+<strong>RP PvDC B</strong></li>
+<li>Added the resource pool <strong>RP PvDC A</strong> to the <strong>PvDC A</strong> in vCloud Director</li>
+<li>Added the resource pool <strong>RP PvDC B</strong> to the <strong>PvDC B</strong> in vCloud Director</li>
+</ul></li>
+</ul></li>
+
+<li><p>in vCloud Director Edit the Provider vDC as a System Administrator and add the
+following metadata as a key/value pair with the MoRef ID of the resource pool matching the PvDC you are editing.</p>
+
+<pre><code class="language-javascript">    placement.resourcepool.edge = &lt;resgroup-id&gt;
+</code></pre>
+
+<p>
+
+  
+  
+  
+  
+    
+      
+    
+  
+    
+  
+
+
+  
+  
+  
+  
+    
+  
+
+<div class="figure " >
+  
+    <a class="fancybox" href="https://cloud.tsugliani.fr/img/vcd-edge-cluster-metadata.png" title="Provider VDC Metadata" data-fancybox-group="">
+  
+    <img class="fig-img" src="https://cloud.tsugliani.fr/img/vcd-edge-cluster-metadata.png"  alt="Provider VDC Metadata">
+  
+    </a>
+  
+  
+    <span class="caption">Provider VDC Metadata</span>
+  
+</div>
+
+  <div style="clear:both;"></div>
+
+if you don&rsquo;t know how to fetch the <code>resgroup-id</code> Management Object Reference Identifier value check the next section</p></li>
+
+<li><p>Redeploy the Edge Gateways to force the new placement logic.</p></li>
+</ol>
+
+<h2 id="how-to-fetch-the-resource-pool-id">How to fetch the resource pool id ?</h2>
+
+<p>There are various ways to fetch those IDs, here are the most common ones you might be familiar with.</p>
+
+<h3 id="from-powercli">From PowerCLI</h3>
+
+<p>This is probably the easiest way for most people to gather the information.</p>
+
+<p>Steps:</p>
+
+<ol>
+<li><p>Fetch the cluster and the resource pool objects</p>
+
+<pre><code class="language-powershell">    $cluster = Get-Cluster -Name &quot;CAI Edge Cluster&quot;
+    $respool = $cluster | Get-ResourcePool -Name &quot;PvDC-Cairo-EdgeRP&quot;
+</code></pre></li>
+
+<li><p>Print the Management Object Reference</p>
+
+<pre><code class="language-powershell">(Get-View $respool).MoRef
+Type               Value
+----               -----
+ResourcePool       resgroup-1527
+</code></pre></li>
+
+<li><p>The result is <strong>resgroup-1527</strong>.</p></li>
+</ol>
+
+<h3 id="from-the-vsphere-managed-object-browser-mob">From the vSphere Managed Object Browser (MOB)</h3>
+
+<p>This requires a bit of habit leveraing the MOB, but with a bit of tinkering, through the vSphere Object models you should find your clusters and the required information.</p>
+
+<p>Steps:</p>
+
+<ol>
+<li>Open a browser to your vcenter url: <strong><a href="https://vcenter/mob">https://vcenter/mob</a></strong></li>
+<li>Login with your environment credentials</li>
+<li>Navigate around ;-)</li>
+</ol>
+
+<blockquote>
+</blockquote>
+
+
+
+  
+  
+  
+  
+    
+      
+    
+  
+    
+  
+
+
+  
+  
+  
+  
+    
+  
+
+<div class="figure " >
+  
+    <a class="fancybox" href="https://cloud.tsugliani.fr/img/nsx-edge-cluster-placement-mob.png" title="vSphere Managed Object Browser" data-fancybox-group="">
+  
+    <img class="fig-img" src="https://cloud.tsugliani.fr/img/nsx-edge-cluster-placement-mob.png"  alt="vSphere Managed Object Browser">
+  
+    </a>
+  
+  
+    <span class="caption">vSphere Managed Object Browser</span>
+  
+</div>
+
+  <div style="clear:both;"></div>
+
+
+<h3 id="from-the-vcloud-api">From the vCloud API</h3>
+
+<p>Thanks to <a href="https://fojta.wordpress.com/about/">Tomas Fojta</a> who found the most relevant <a href="http://pubs.vmware.com/vcd-820/index.jsp#com.vmware.vcloud.api.reference.doc_27_0/doc/operations/GET-DiscoverRPForAdoption.html">API request</a> to fetch both the resource pool name &amp; ID so we can easily identify the appropriate resource pool.</p>
+
+<p><code>GET /api/admin/extension/providervdc/&lt;id&gt;/discoverResourcePools</code></p>
+
+<p>Sample request leveraging <a href="https://www.getpostman.com">Postman</a>:</p>
+
+<blockquote>
+</blockquote>
+
+
+
+  
+  
+  
+  
+    
+      
+    
+  
+    
+  
+
+
+  
+  
+  
+  
+    
+  
+
+<div class="figure " >
+  
+    <a class="fancybox" href="https://cloud.tsugliani.fr/img/nsx-edge-cluster-placement-vcloud-api.png" title="vCloud API Request" data-fancybox-group="">
+  
+    <img class="fig-img" src="https://cloud.tsugliani.fr/img/nsx-edge-cluster-placement-vcloud-api.png"  alt="vCloud API Request">
+  
+    </a>
+  
+  
+    <span class="caption">vCloud API Request</span>
+  
+</div>
+
+  <div style="clear:both;"></div>
+
+
+<h1 id="validating-the-configuration">Validating the configuration</h1>
+
+<p>Once the Provider VDC Metadata has been configured with the added metadata, head back to vCloud Director, and test that this new feature works as expected by redeploying an Edge Gateway.
+You should witness something similar to the following animated process.</p>
+
+<blockquote>
+</blockquote>
+
+
+
+  
+  
+  
+  
+    
+      
+    
+  
+    
+  
+
+
+  
+  
+  
+  
+    
+  
+
+<div class="figure " >
+  
+    <a class="fancybox" href="https://cloud.tsugliani.fr/img/nsx-edge-gateway-redeploy.gif" title="Redeploying an Edge Gateway" data-fancybox-group="">
+  
+    <img class="fig-img" src="https://cloud.tsugliani.fr/img/nsx-edge-gateway-redeploy.gif"  alt="Redeploying an Edge Gateway">
+  
+    </a>
+  
+  
+    <span class="caption">Redeploying an Edge Gateway</span>
+  
+</div>
+
+  <div style="clear:both;"></div>
+
+
+<p>You could easily automate the whole process, from setting the required metadata to the edges redeployment, leveraging both the vSphere &amp; vCloud API.</p>
+
+<p>Hope this helps.</p>
+
+              
+            </div>
+          </div>
+          <div id="post-footer" class="post-footer main-content-wrap">
+            
+              
+                
+                
+                  <div class="post-footer-tags">
+                    <span class="text-color-light text-small">TAGGED IN</span><br/>
+                    
+  <a class="tag tag--primary tag--small" href="https://cloud.tsugliani.fr/tags/vmware/">vmware</a>
+
+  <a class="tag tag--primary tag--small" href="https://cloud.tsugliani.fr/tags/cloud/">cloud</a>
+
+  <a class="tag tag--primary tag--small" href="https://cloud.tsugliani.fr/tags/design/">design</a>
+
+  <a class="tag tag--primary tag--small" href="https://cloud.tsugliani.fr/tags/api/">api</a>
+
+  <a class="tag tag--primary tag--small" href="https://cloud.tsugliani.fr/tags/network/">network</a>
+
+                  </div>
+                
+              
+            
+            
+  <div class="post-actions-wrap">
+      <nav >
+        <ul class="post-actions post-action-nav">
+            <li class="post-action">
+              
+                <a class="post-action-btn btn btn--disabled">
+              
+                <i class="fa fa-angle-left"></i>
+                <span class="hide-xs hide-sm text-small icon-ml">NEXT</span>
+              </a>
+            </li>
+            <li class="post-action">
+              
+                <a class="post-action-btn btn btn--disabled">
+              
+                <span class="hide-xs hide-sm text-small icon-mr">PREVIOUS</span>
+                <i class="fa fa-angle-right"></i>
+              </a>
+            </li>
+        </ul>
+      </nav>
+    <ul class="post-actions post-action-share" >
+      
+        <li class="post-action hide-lg hide-md hide-sm">
+          <a class="post-action-btn btn btn--default btn-open-shareoptions" href="#btn-open-shareoptions">
+            <i class="fa fa-share-alt"></i>
+          </a>
+        </li>
+        
+          <li class="post-action hide-xs">
+            <a class="post-action-btn btn btn--default" target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://cloud.tsugliani.fr/2017/09/vcloud-director-9.0-nsx-edge-gateway-cluster-placement/">
+              <i class="fa fa-facebook-official"></i>
+            </a>
+          </li>
+        
+          <li class="post-action hide-xs">
+            <a class="post-action-btn btn btn--default" target="new" href="https://twitter.com/intent/tweet?text=https://cloud.tsugliani.fr/2017/09/vcloud-director-9.0-nsx-edge-gateway-cluster-placement/">
+              <i class="fa fa-twitter"></i>
+            </a>
+          </li>
+        
+          <li class="post-action hide-xs">
+            <a class="post-action-btn btn btn--default" target="new" href="https://plus.google.com/share?url=https://cloud.tsugliani.fr/2017/09/vcloud-director-9.0-nsx-edge-gateway-cluster-placement/">
+              <i class="fa fa-google-plus"></i>
+            </a>
+          </li>
+        
+      
+      
+      <li class="post-action">
+        
+          <a class="post-action-btn btn btn--default" href="#">
+        
+          <i class="fa fa-list"></i>
+        </a>
+      </li>
+    </ul>
+  </div>
+
+
+            
+              
+            
+          </div>
+        </article>
+        <footer id="footer" class="main-content-wrap">
+  <span class="copyrights">
+    &copy; 2017 Timo Sugliani. All Rights Reserved
+  </span>
+</footer>
+
+      </div>
+      <div id="bottom-bar" class="post-bottom-bar" data-behavior="5">
+        
+  <div class="post-actions-wrap">
+      <nav >
+        <ul class="post-actions post-action-nav">
+            <li class="post-action">
+              
+                <a class="post-action-btn btn btn--disabled">
+              
+                <i class="fa fa-angle-left"></i>
+                <span class="hide-xs hide-sm text-small icon-ml">NEXT</span>
+              </a>
+            </li>
+            <li class="post-action">
+              
+                <a class="post-action-btn btn btn--disabled">
+              
+                <span class="hide-xs hide-sm text-small icon-mr">PREVIOUS</span>
+                <i class="fa fa-angle-right"></i>
+              </a>
+            </li>
+        </ul>
+      </nav>
+    <ul class="post-actions post-action-share" >
+      
+        <li class="post-action hide-lg hide-md hide-sm">
+          <a class="post-action-btn btn btn--default btn-open-shareoptions" href="#btn-open-shareoptions">
+            <i class="fa fa-share-alt"></i>
+          </a>
+        </li>
+        
+          <li class="post-action hide-xs">
+            <a class="post-action-btn btn btn--default" target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://cloud.tsugliani.fr/2017/09/vcloud-director-9.0-nsx-edge-gateway-cluster-placement/">
+              <i class="fa fa-facebook-official"></i>
+            </a>
+          </li>
+        
+          <li class="post-action hide-xs">
+            <a class="post-action-btn btn btn--default" target="new" href="https://twitter.com/intent/tweet?text=https://cloud.tsugliani.fr/2017/09/vcloud-director-9.0-nsx-edge-gateway-cluster-placement/">
+              <i class="fa fa-twitter"></i>
+            </a>
+          </li>
+        
+          <li class="post-action hide-xs">
+            <a class="post-action-btn btn btn--default" target="new" href="https://plus.google.com/share?url=https://cloud.tsugliani.fr/2017/09/vcloud-director-9.0-nsx-edge-gateway-cluster-placement/">
+              <i class="fa fa-google-plus"></i>
+            </a>
+          </li>
+        
+      
+      
+      <li class="post-action">
+        
+          <a class="post-action-btn btn btn--default" href="#">
+        
+          <i class="fa fa-list"></i>
+        </a>
+      </li>
+    </ul>
+  </div>
+
+
+      </div>
+      <div id="share-options-bar" class="share-options-bar" data-behavior="5">
+  <i id="btn-close-shareoptions" class="fa fa-close"></i>
+  <ul class="share-options">
+    
+      <li class="share-option">
+        <a class="share-option-btn" target="new" href="https://www.facebook.com/sharer/sharer.php?u=https%3A%2F%2Fcloud.tsugliani.fr%2F2017%2F09%2Fvcloud-director-9.0-nsx-edge-gateway-cluster-placement%2F">
+          <i class="fa fa-facebook-official"></i><span>Share on Facebook</span>
+        </a>
+      </li>
+    
+      <li class="share-option">
+        <a class="share-option-btn" target="new" href="https://twitter.com/intent/tweet?text=https%3A%2F%2Fcloud.tsugliani.fr%2F2017%2F09%2Fvcloud-director-9.0-nsx-edge-gateway-cluster-placement%2F">
+          <i class="fa fa-twitter"></i><span>Share on Twitter</span>
+        </a>
+      </li>
+    
+      <li class="share-option">
+        <a class="share-option-btn" target="new" href="https://plus.google.com/share?url=https%3A%2F%2Fcloud.tsugliani.fr%2F2017%2F09%2Fvcloud-director-9.0-nsx-edge-gateway-cluster-placement%2F">
+          <i class="fa fa-google-plus"></i><span>Share on Google&#43;</span>
+        </a>
+      </li>
+    
+  </ul>
+</div>
+<div id="share-options-mask" class="share-options-mask"></div>
+    </div>
+    
+    <div id="about">
+  <div id="about-card">
+    <div id="about-btn-close">
+      <i class="fa fa-remove"></i>
+    </div>
+    
+      <img id="about-card-picture" src="//www.gravatar.com/avatar/eb80e6c9521260128c16edb7c3e570ee?s=110" alt="Author&#39;s picture" />
+    
+    <h4 id="about-card-name">Timo Sugliani</h4>
+    
+      <div id="about-card-bio">Enthusiast French Cloud Dude</div>
+    
+    
+      <div id="about-card-job">
+        <i class="fa fa-briefcase"></i>
+        <br/>
+        Global Cloud Architect @ <a href="https://www.vmware.com">VMware</a>
+      </div>
+    
+    
+      <div id="about-card-location">
+        <i class="fa fa-map-marker"></i>
+        <br/>
+        France
+      </div>
+    
+  </div>
+</div>
+
+    <div id="algolia-search-modal" class="modal-container">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="close-button"><i class="fa fa-close"></i></span>
+      <a href="https://algolia.com" target="_blank" rel="noopener" class="searchby-algolia text-color-light link-unstyled">
+        <span class="searchby-algolia-text text-color-light text-small">by</span>
+        <img class="searchby-algolia-logo" src="https://www.algolia.com/static_assets/images/press/downloads/algolia-light.svg">
+      </a>
+      <i class="search-icon fa fa-search"></i>
+      <form id="algolia-search-form">
+        <input type="text" id="algolia-search-input" name="search"
+          class="form-control input--large search-input" placeholder="Search" />
+      </form>
+    </div>
+    <div class="modal-body">
+      <div class="no-result text-color-light text-center">no post found</div>
+      <div class="results">
+        
+        
+          <div class="media">
+            
+            <div class="media-body">
+              <a class="link-unstyled" href="https://cloud.tsugliani.fr/2017/09/vcloud-director-9.0-nsx-edge-gateway-cluster-placement/">
+                <h3 class="media-heading">vCloud Director 9.0: NSX Edge Gateway cluster placement</h3>
+              </a>
+              <span class="media-meta">
+                <span class="media-date text-small">
+                  Sep 9, 2017
+                </span>
+              </span>
+              <div class="media-content hide-xs font-merryweather">This post will highlight a long awaited feature, which is now available in vCloud Director 9.0.
+We will depict how to enforce the placement of the NSX Edge Gateways in a resource pool, which ultimately leverages a specific vSphere Cluster.
+It avoids having to spread all External VLANs across every Compute Cluster and enforce all the traffic connecting to the outside world would go through a specific location. (Cluster/TOR/Racks)</div>
+            </div>
+            <div style="clear:both;"></div>
+            <hr>
+          </div>
+        
+          <div class="media">
+            
+            <div class="media-body">
+              <a class="link-unstyled" href="https://cloud.tsugliani.fr/post/">
+                <h3 class="media-heading">Posts</h3>
+              </a>
+              <span class="media-meta">
+                <span class="media-date text-small">
+                  Sep 9, 2017
+                </span>
+              </span>
+              <div class="media-content hide-xs font-merryweather"></div>
+            </div>
+            <div style="clear:both;"></div>
+            <hr>
+          </div>
+        
+      </div>
+    </div>
+    <div class="modal-footer">
+      <p class="results-count text-medium"
+         data-message-zero="no post found"
+         data-message-one="1 post found"
+         data-message-other="{n} posts found">
+         2 posts found
+      </p>
+    </div>
+  </div>
+</div>
+    
+  
+    
+    <div id="cover" style="background-image:url('https://cloud.tsugliani.fr/images/cover.jpg');"></div>
+  
+
+
+    
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/2.1.3/jquery.min.js" integrity="sha256-IFHWFEbU2/+wNycDECKgjIRSirRNIDp2acEB5fvdVRU=" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.8.0/highlight.min.js" integrity="sha256-+mpyNVJsNt4rVXCw0F+pAOiB3YxmHgrbJsx4ecPuUaI=" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/fancybox/2.1.4/jquery.fancybox.min.js" integrity="sha256-vMxgR/7FtLovVA+IPrR7+xTgIgARH7y9VZQnmmi0HDI=" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/fancybox/2.1.4/helpers/jquery.fancybox-thumbs.min.js" integrity="sha256-N0qFUh7/9vLvia87dDndewmsgsyYoNkdA212tPc+2NI=" crossorigin="anonymous"></script>
+
+
+<script src="https://cloud.tsugliani.fr/js/script-qi9wbxp2ya2j6p7wx1i6tgavftewndznf4v0hy2gvivk1rxgc3lm7njqb6bz.min.js"></script>
+
+
+<script>
+$(document).ready(function() {
+  hljs.configure({ classPrefix: '', useBR: false });
+  $('pre.code-highlight, pre > code').each(function(i, block) {
+    if (!$(this).hasClass('codeblock')) {
+      $(this).addClass('codeblock');
+    }
+    hljs.highlightBlock(block);
+  });
+});
+</script>
+
+  
+    
+  
+
+
+
+    
+  </body>
+</html>
+

@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Network on VMware &amp; DevOps Cloud Stuff</title>
+    <link>https://cloud.tsugliani.fr/categories/network/</link>
+    <description>Recent content in Network on VMware &amp; DevOps Cloud Stuff</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <lastBuildDate>Sun, 24 Sep 2017 00:00:00 +0000</lastBuildDate>
+    
+	<atom:link href="https://cloud.tsugliani.fr/categories/network/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>vCloud Director 9.0: NSX Edge Gateway cluster placement</title>
+      <link>https://cloud.tsugliani.fr/2017/09/vcloud-director-9.0-nsx-edge-gateway-cluster-placement/</link>
+      <pubDate>Sun, 24 Sep 2017 00:00:00 +0000</pubDate>
+      
+      <guid>https://cloud.tsugliani.fr/2017/09/vcloud-director-9.0-nsx-edge-gateway-cluster-placement/</guid>
+      <description>This post will highlight a long awaited feature, and is now available in vCloud Director 9.0.
+It will depict how to enforce the placement of the NSX Edge Gateways in a resource pool, which ultimately leverages a specific vSphere Cluster. Over the last revisions of vCloud Director, one thing we couldn&amp;rsquo;t accomplish easily was to ensure all N/S traffic from the NSX VXLAN overlay to interconnecting with the physical underlay/networks, usually VLAN Based.</description>
+    </item>
+    
+  </channel>
+</rss>
