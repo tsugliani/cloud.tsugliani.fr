@@ -30,7 +30,7 @@ canonifyurls = true
 
 [author]
   name = "Timo Sugliani"
-  bio = "Enthusiast French Cloud Dude"
+  bio = "Enthusiast French Cloud Dude<br />This blog is my personal one and in no way represents the opinions of my employer."
   job = "Global Cloud Architect @ [VMware](https://www.vmware.com)"
   location = "France"
   # Your Gravatar email. Overwrite `author.picture` everywhere in the blog
@@ -183,15 +183,3 @@ canonifyurls = true
     icon = "fa-google-plus"
     url = "https://plus.google.com/share?url=%s"
 
-  [params.header.rightLink]
-    class = ""
-    icon = ""
-    url = "/#about"
-
-  # Customize link of author avatar in sidebar
-  # [params.sidebar.profile]
-  #   url = "/#about"
-
-  # Customize copyright value "© 2016 <CUSTOMIZATION>. All Rights Reserved"
-  # [params.footer]
-  #   copyright = "<a href=\"https://github.com/kakawait\">kakawait</a>"
