@@ -122,7 +122,7 @@ This is how the architecture looks with the current version of the service at th
 
 ![CSE Architecture Overview](/img/vcd-cse-architecture-overview-diagram.svg)
 
-Next blog post we will go into the Service Provider requirements.
+Next blog post we will go into the Service Provider [Requirements](https://cloud.tsugliani.fr/2018/04/vcloud-director-and-cse-part-2/).
 
 
 

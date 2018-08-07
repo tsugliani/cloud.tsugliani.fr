@@ -87,4 +87,4 @@ High level steps:
 
 Hope this helps,
 
-In the next blog post we will cover the installation & configuration part in more detail.
+In the next blog post we will cover the [Installation & Configuration](https://cloud.tsugliani.fr/2018/07/vcloud-director-and-cse-part-3/) part in more detail.

@@ -51,7 +51,7 @@ From a **Service Provider** perspective:
 
 - [Architecture](https://cloud.tsugliani.fr/2018/04/vcloud-director-and-cse-part-1/)
 - [Requirements](https://cloud.tsugliani.fr/2018/04/vcloud-director-and-cse-part-2/)
-- Installation & Configuration
+- [Installation & Configuration](https://cloud.tsugliani.fr/2018/07/vcloud-director-and-cse-part-3/)
 - Troubleshooting / Tips & Tricks
 - Extending
   - Templates
